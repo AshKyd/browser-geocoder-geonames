@@ -16,15 +16,7 @@ export default defineConfig({
 				types: path.resolve(import.meta.dirname, 'src/types.ts')
 			},
 			name: 'BrowserGeocoderGeonames',
-			formats: ['es', 'cjs']
-		},
-		rollupOptions: {
-			external: ['ngeohash'],
-			output: {
-				globals: {
-					ngeohash: 'ngeohash'
-				}
-			}
+			formats: ['es']
 		}
 	}
 });

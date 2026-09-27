@@ -19,28 +19,11 @@ export async function loadGeoNamesDataset(
 	if (cached) return cached;
 
 	const promise = (async () => {
-		let text = '';
-		const isNode = typeof process !== 'undefined' && Boolean(process.versions?.node);
-		const isRemote = dataUrl.startsWith('http://') || dataUrl.startsWith('https://');
-
-		if (dataUrl.startsWith('file://') || (isNode && !isRemote)) {
-			try {
-				const { readFile } = await import('node:fs/promises');
-				const { fileURLToPath } = await import('node:url');
-				const filePath = dataUrl.startsWith('file://') ? fileURLToPath(dataUrl) : dataUrl;
-				text = await readFile(filePath, 'utf-8');
-			} catch {
-				// Fallback to fetch if file reading fails
-			}
+		const res = await fetch(dataUrl);
+		if (!res.ok) {
+			throw new Error(`Failed to fetch dataset from ${dataUrl}: ${res.statusText}`);
 		}
-
-		if (!text) {
-			const res = await fetch(dataUrl);
-			if (!res.ok) {
-				throw new Error(`Failed to fetch dataset from ${dataUrl}: ${res.statusText}`);
-			}
-			text = await res.text();
-		}
+		const text = await res.text();
 
 		const headerEnd = text.indexOf('\n');
 		const headerLine = headerEnd !== -1 ? text.slice(0, headerEnd) : text;

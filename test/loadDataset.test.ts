@@ -77,7 +77,7 @@ describe('loadDataset', () => {
 		});
 	});
 
-	it('should load local dataset via file:// URL', async () => {
+	it('should load dataset via URL', async () => {
 		const dataset = await loadGeoNamesDataset(localDataFileUrl);
 		expect(dataset).toBeDefined();
 		expect(dataset.rawText).toBeDefined();
@@ -85,12 +85,6 @@ describe('loadDataset', () => {
 		expect(Array.isArray(dataset.states)).toBe(true);
 		expect(dataset.letterRanges).toBeDefined();
 		expect(dataset.geoRanges).toBeDefined();
-	});
-
-	it('should load local dataset via direct file path in Node environment', async () => {
-		const dataset = await loadGeoNamesDataset(localDataFilePath);
-		expect(dataset).toBeDefined();
-		expect(dataset.countries).toBeDefined();
 	});
 
 	it('should memoize dataset promise and return cached result on subsequent calls', async () => {
@@ -152,7 +146,7 @@ describe('loadDataset', () => {
 		}
 	});
 
-	it('should fallback to fetch if node readFile fails', async () => {
+	it('should fetch dataset over fetch for file:// URLs or local file paths', async () => {
 		const headerObj = { countries: ['CA'], states: [], letterRanges: {}, geoRanges: {} };
 		const responseBody = JSON.stringify(headerObj) + '\n';
 

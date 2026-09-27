@@ -129,11 +129,14 @@ You can host your own custom dataset generated directly from official GeoNames d
 Execute the included dataset generator script:
 
 ```bash
-# Default population cutoff (places with population >= 200)
+# Default population cutoff (places with population >= 200, worldwide dataset)
 node node_modules/browser-geocoder-geonames/scripts/fetch-geonames.js
 
 # Custom minimum population cutoff (e.g. population >= 500)
 node node_modules/browser-geocoder-geonames/scripts/fetch-geonames.js --min-pop=500
+
+# Custom GeoNames dataset dump URL (e.g. single country dump like Australia AU.zip)
+node node_modules/browser-geocoder-geonames/scripts/fetch-geonames.js --url=https://download.geonames.org/export/dump/AU.zip
 ```
 
 This script:

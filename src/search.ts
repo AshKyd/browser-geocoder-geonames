@@ -130,13 +130,12 @@ export async function searchGeoNames(
 	}
 
 	const found: GeoNameResult[] = [];
-	const MAX_MATCHES = 50;
+	const normKeyword = keyword.trim().toLowerCase();
 	const MAX_CHUNK_MS = 8;
 	let lastYieldTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
 	for (const item of letterRecords) {
 		if (signal?.aborted) return found;
-		if (found.length >= MAX_MATCHES) break;
 
 		const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 		if (now - lastYieldTime > MAX_CHUNK_MS) {
@@ -156,6 +155,14 @@ export async function searchGeoNames(
 			});
 		}
 	}
+
+	found.sort((a, b) => {
+		const aExact = a.name.toLowerCase() === normKeyword;
+		const bExact = b.name.toLowerCase() === normKeyword;
+		if (aExact !== bExact) return aExact ? -1 : 1;
+		if (a.isNameMatch !== b.isNameMatch) return a.isNameMatch ? -1 : 1;
+		return b.population - a.population;
+	});
 
 	if (found.length > 0) {
 		onProgress?.([...found]);

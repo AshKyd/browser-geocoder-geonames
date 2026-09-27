@@ -18,6 +18,17 @@ describe('searchGeoNames', () => {
 		expect(sydney?.isNameMatch).toBe(true);
 	});
 
+	it('should return Paris in France as top result when searching for "Paris"', async () => {
+		const results = await searchGeoNames('Paris', dataFileUrl);
+		expect(results.length).toBeGreaterThan(0);
+
+		const topMatch = results[0];
+		expect(topMatch.name).toBe('Paris');
+		expect(topMatch.country).toBe('FR');
+		expect(topMatch.state).toBe('Île-de-France');
+		expect(topMatch.isNameMatch).toBe(true);
+	});
+
 	it('should match multiple tokens across name, country, and state fields', async () => {
 		const results = await searchGeoNames('Sydney New South Wales AU', dataFileUrl);
 		expect(results.length).toBeGreaterThan(0);

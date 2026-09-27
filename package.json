@@ -1,0 +1,55 @@
+{
+  "name": "browser-geocoder-geonames",
+  "version": "0.0.1",
+  "description": "Offline-first client-side location search and reverse geocoder powered by GeoNames.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./*.bin": "./dist/*.bin",
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "build-data": "node scripts/fetch-geonames.js",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ngeohash": "^0.6.4"
+  },
+  "devDependencies": {
+    "@types/ngeohash": "^0.6.8",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.2"
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "geocoder",
+    "geonames",
+    "reverse-geocoding",
+    "location-search",
+    "offline",
+    "browser",
+    "geohash",
+    "typeahead"
+  ],
+  "license": "MIT"
+}

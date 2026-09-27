@@ -45,3 +45,40 @@ export interface GeoNamesParsedStore {
 }
 
 export type GeoNamesDict = GeoNamesParsedStore;
+
+export interface SearchGeoNamesOptions {
+	/** Search keyword or phrase */
+	keyword: string;
+	/** Custom dataset URL or path */
+	dataUrl?: string;
+	/** Optional streaming progress callback */
+	onProgress?: (results: GeoNameResult[]) => void;
+	/** Optional AbortSignal for query cancellation */
+	signal?: AbortSignal;
+}
+
+export interface GeolocateNearestOptions {
+	/** Latitude coordinate (-90 to 90) */
+	latitude: number;
+	/** Longitude coordinate (-180 to 180) */
+	longitude: number;
+	/** Custom dataset URL or path */
+	dataUrl?: string;
+	/** Maximum distance threshold in kilometers */
+	maxDistanceKm?: number;
+	/** Optional progress callback */
+	onProgress?: (result: NearestLocationResult | null) => void;
+	/** Optional AbortSignal for query cancellation */
+	signal?: AbortSignal;
+}
+
+export interface LoadDatasetOptions {
+	/** Custom dataset URL or path */
+	dataUrl?: string;
+}
+
+export interface PrefetchDatasetOptions {
+	/** Custom dataset URL or path */
+	dataUrl?: string;
+}
+

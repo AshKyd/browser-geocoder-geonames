@@ -1,5 +1,5 @@
 import { DEFAULT_DATA_URL } from './constants.js';
-import type { GeoNamesParsedStore } from './types.js';
+import type { GeoNamesParsedStore, LoadDatasetOptions, PrefetchDatasetOptions } from './types.js';
 
 const datasetCache = new Map<string, Promise<GeoNamesParsedStore>>();
 
@@ -8,8 +8,9 @@ const datasetCache = new Map<string, Promise<GeoNamesParsedStore>>();
  * and memoizes dataset promise in memory.
  */
 export async function loadGeoNamesDataset(
-	dataUrl: string = DEFAULT_DATA_URL
+	options: LoadDatasetOptions | string = DEFAULT_DATA_URL
 ): Promise<GeoNamesParsedStore> {
+	const dataUrl = typeof options === 'string' ? options : (options?.dataUrl ?? DEFAULT_DATA_URL);
 	if (!dataUrl || !dataUrl.trim()) {
 		throw new Error('[browser-geocoder-geonames] dataUrl parameter must be specified.');
 	}
@@ -49,8 +50,35 @@ export async function loadGeoNamesDataset(
 			...headerData,
 			rawText: text
 		};
-	})();
+	})().catch((err) => {
+		datasetCache.delete(dataUrl);
+		throw err;
+	});
 
 	datasetCache.set(dataUrl, promise);
 	return promise;
 }
+
+/**
+ * Inserts a `<link rel="prefetch">` element into document.head to warm the browser HTTP cache for the dataset file.
+ */
+export function prefetchGeoNamesDataset(
+	options: PrefetchDatasetOptions | string = DEFAULT_DATA_URL
+): void {
+	const dataUrl = typeof options === 'string' ? options : (options?.dataUrl ?? DEFAULT_DATA_URL);
+	if (typeof document === 'undefined' || !dataUrl || !dataUrl.trim()) return;
+
+	const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="prefetch"]'));
+	const alreadyPrefetched = links.some((link) => link.href === dataUrl || link.getAttribute('href') === dataUrl);
+	if (alreadyPrefetched) return;
+
+	const link = document.createElement('link');
+	link.rel = 'prefetch';
+	link.href = dataUrl;
+	link.as = 'fetch';
+	if (dataUrl.startsWith('http://') || dataUrl.startsWith('https://')) {
+		link.crossOrigin = 'anonymous';
+	}
+	document.head.appendChild(link);
+}
+

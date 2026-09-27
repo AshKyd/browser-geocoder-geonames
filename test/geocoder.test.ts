@@ -10,8 +10,8 @@ import {
 	searchGeoNames
 } from '../src/index.js';
 
-// Resolve local geonames.bin file URL for testing dataset operations
-const dataFileUrl = pathToFileURL(path.resolve('public/geonames.bin')).href;
+// Resolve local geonames.txt file URL for testing dataset operations
+const dataFileUrl = pathToFileURL(path.resolve('public/geonames.txt')).href;
 
 describe('browser-geocoder-geonames', () => {
 	describe('haversineDistance', () => {
@@ -83,7 +83,7 @@ describe('browser-geocoder-geonames', () => {
 			vi.stubGlobal('fetch', mockFetch);
 
 			try {
-				const httpUrl = 'https://example.com/geonames.bin';
+				const httpUrl = 'https://example.com/geonames.txt';
 				const dataset = await loadGeoNamesDataset(httpUrl);
 				expect(mockFetch).toHaveBeenCalledWith(httpUrl);
 				expect(dataset.countries).toEqual(['AU']);

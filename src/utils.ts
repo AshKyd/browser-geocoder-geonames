@@ -1,15 +1,22 @@
 import geohash from 'ngeohash';
 
 /**
+ * Strips diacritics and converts string to lowercase for search normalization.
+ */
+export function normalizeText(text: string): string {
+	if (!text) return '';
+	return text
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase();
+}
+
+/**
  * Normalizes location name starting letter to a single Latin a-z character.
  */
 export function getNormalizedFirstLetter(name: string): string {
 	if (!name) return 'a';
-	const normalizedStr = name
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.replace(/[^a-zA-Z]/g, '')
-		.toLowerCase();
+	const normalizedStr = normalizeText(name).replace(/[^a-z]/g, '');
 	return normalizedStr.charAt(0) || 'a';
 }
 

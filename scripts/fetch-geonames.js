@@ -19,9 +19,19 @@ const ZIP_FILE_PATH = path.resolve(__dirname, 'allCountries.zip');
 const TXT_FILE_PATH = path.resolve(__dirname, 'allCountries.txt');
 const ADMIN1_FILE_PATH = path.resolve(__dirname, 'admin1CodesASCII.txt');
 const PUBLIC_DIRECTORY = path.resolve(__dirname, '../public');
-const OUTPUT_FILE_PATH = path.resolve(PUBLIC_DIRECTORY, 'geonames.bin');
+const OUTPUT_FILE_PATH = path.resolve(PUBLIC_DIRECTORY, 'geonames.txt');
 
-const POPULATION_THRESHOLD = 200; // Filter: minimum population cutoff (places with >= 200)
+// Parse CLI population cutoff argument (e.g. node fetch-geonames.js --min-pop=500 or positional number 500)
+function parsePopulationThreshold() {
+	const defaultThreshold = 200;
+	const arg = process.argv[2];
+	if (!arg) return defaultThreshold;
+	const match = arg.match(/^(?:--min-pop=)?(\d+)$/);
+	if (match) return Number(match[1]);
+	return defaultThreshold;
+}
+
+const POPULATION_THRESHOLD = parsePopulationThreshold(); // Filter: minimum population cutoff (default >= 200)
 const GEOHASH_PRECISION = 6; // Length of geohash string (6 is ~1.2km precision)
 
 /**
@@ -138,7 +148,7 @@ async function loadAdmin1Map() {
 }
 
 /**
- * Processes the raw GeoNames text file into a single compact geonames.bin file.
+ * Processes the raw GeoNames text file into a single compact geonames.txt file.
  */
 async function processGeoNames() {
 	await ensureZipFileDownloaded();

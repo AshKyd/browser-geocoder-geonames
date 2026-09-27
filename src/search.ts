@@ -1,39 +1,36 @@
 import { DEFAULT_DATA_URL } from './constants.js';
 import { loadGeoNamesDataset } from './loadDataset.js';
-import type { GeoNameResult } from './types.js';
+import type { GeoNameResult, SearchGeoNamesOptions } from './types.js';
 import {
 	decodeGeohash,
 	getNormalizedFirstLetter,
+	normalizeText,
 	parseBase36Population,
 	yieldToMain
 } from './utils.js';
 
-const parsedLetterCache = new Map<string, GeoNameResult[]>();
-const searchQueryCache = new Map<string, GeoNameResult[]>();
+interface PreparedLetterRecord extends GeoNameResult {
+	normalizedName: string;
+	normalizedCountry: string;
+	normalizedState: string;
+}
+
+// Single active letter bucket cache to maintain typeahead speed while conserving memory
+const parsedLetterCache = new Map<string, PreparedLetterRecord[]>();
 
 /**
- * Checks whether a row matches a list of search tokens across name, country, and state fields.
+ * Checks whether a row matches a list of pre-normalized search tokens across name, country, and state fields.
  */
 function isRowMatchingTokens(
 	tokens: string[],
-	name: string,
-	country: string,
-	state: string
+	normName: string,
+	normCountry: string,
+	normState: string
 ): boolean {
-	const nameLower = name
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.toLowerCase();
-	const countryLower = country.toLowerCase();
-	const stateLower = state
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.toLowerCase();
-
 	return tokens.every((token) => {
-		if (nameLower.includes(token)) return true;
-		if (countryLower === token) return true;
-		if (stateLower.includes(token)) return true;
+		if (normName.includes(token)) return true;
+		if (normCountry === token) return true;
+		if (normState.includes(token)) return true;
 		return false;
 	});
 }
@@ -42,11 +39,28 @@ function isRowMatchingTokens(
  * Searches the compact GeoNames dataset for a multi-word search query using cached letter buckets.
  */
 export async function searchGeoNames(
-	keyword: string,
-	dataUrl: string = DEFAULT_DATA_URL,
-	onProgress?: (results: GeoNameResult[]) => void,
-	signal?: AbortSignal
+	options: SearchGeoNamesOptions | string,
+	dataUrlParam: string = DEFAULT_DATA_URL,
+	onProgressParam?: (results: GeoNameResult[]) => void,
+	signalParam?: AbortSignal
 ): Promise<GeoNameResult[]> {
+	const opts: SearchGeoNamesOptions =
+		typeof options === 'string'
+			? {
+					keyword: options,
+					dataUrl: dataUrlParam,
+					onProgress: onProgressParam,
+					signal: signalParam
+				}
+			: options;
+
+	const {
+		keyword = '',
+		dataUrl = DEFAULT_DATA_URL,
+		onProgress,
+		signal
+	} = opts || {};
+
 	if (signal?.aborted) return [];
 
 	if (!dataUrl || !dataUrl.trim()) {
@@ -56,18 +70,11 @@ export async function searchGeoNames(
 	const tokens = keyword.trim().toLowerCase().split(/\s+/).filter(Boolean);
 	if (tokens.length === 0) return [];
 
-	const cacheKey = `${dataUrl}::${tokens.join(' ')}`;
-	if (searchQueryCache.has(cacheKey)) {
-		const cached = searchQueryCache.get(cacheKey)!;
-		onProgress?.([...cached]);
-		return cached;
-	}
-
 	const dataset = await loadGeoNamesDataset(dataUrl);
 	const initialLetter = getNormalizedFirstLetter(tokens[0]);
 	const letterCacheKey = `${dataUrl}::letter::${initialLetter}`;
 
-	let letterRecords: GeoNameResult[];
+	let letterRecords: PreparedLetterRecord[];
 
 	if (parsedLetterCache.has(letterCacheKey)) {
 		letterRecords = parsedLetterCache.get(letterCacheKey)!;
@@ -107,9 +114,17 @@ export async function searchGeoNames(
 					state,
 					population: parseBase36Population(popB36),
 					latitude,
-					longitude
+					longitude,
+					normalizedName: normalizeText(name),
+					normalizedCountry: country.toLowerCase(),
+					normalizedState: normalizeText(state)
 				});
 			}
+		}
+
+		// Keep only the single most recent letter bucket active in memory
+		if (parsedLetterCache.size >= 1) {
+			parsedLetterCache.clear();
 		}
 		parsedLetterCache.set(letterCacheKey, letterRecords);
 	}
@@ -132,20 +147,15 @@ export async function searchGeoNames(
 			}
 		}
 
-		if (isRowMatchingTokens(tokens, item.name, item.country, item.state)) {
-			const nameLower = item.name
-				.normalize('NFD')
-				.replace(/[\u0300-\u036f]/g, '')
-				.toLowerCase();
-			const isNameMatch = tokens.every((token) => nameLower.includes(token));
+		if (isRowMatchingTokens(tokens, item.normalizedName, item.normalizedCountry, item.normalizedState)) {
+			const isNameMatch = tokens.every((token) => item.normalizedName.includes(token));
+			const { normalizedName: _n, normalizedCountry: _c, normalizedState: _s, ...result } = item;
 			found.push({
-				...item,
+				...result,
 				isNameMatch
 			});
 		}
 	}
-
-	searchQueryCache.set(cacheKey, found);
 
 	if (found.length > 0) {
 		onProgress?.([...found]);

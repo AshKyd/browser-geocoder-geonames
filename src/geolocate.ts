@@ -1,7 +1,7 @@
 import geohash from 'ngeohash';
 import { DEFAULT_DATA_URL, DEFAULT_MAX_GEOLOCATE_DISTANCE_KM } from './constants.js';
 import { loadGeoNamesDataset } from './loadDataset.js';
-import type { NearestLocationResult } from './types.js';
+import type { GeolocateNearestOptions, NearestLocationResult } from './types.js';
 import { decodeGeohash, haversineDistance, yieldToMain } from './utils.js';
 
 const geolocateQueryCache = new Map<string, NearestLocationResult | null>();
@@ -10,13 +10,34 @@ const geolocateQueryCache = new Map<string, NearestLocationResult | null>();
  * Finds the nearest location name to given lat/lon coordinates from the GeoNames dataset using cached geohash buckets.
  */
 export async function geolocateNearest(
-	latitude: number,
-	longitude: number,
-	dataUrl: string = DEFAULT_DATA_URL,
-	maxDistanceKm: number = DEFAULT_MAX_GEOLOCATE_DISTANCE_KM,
-	onProgress?: (result: NearestLocationResult | null) => void,
-	signal?: AbortSignal
+	options: GeolocateNearestOptions | number,
+	longitudeParam?: number,
+	dataUrlParam: string = DEFAULT_DATA_URL,
+	maxDistanceKmParam: number = DEFAULT_MAX_GEOLOCATE_DISTANCE_KM,
+	onProgressParam?: (result: NearestLocationResult | null) => void,
+	signalParam?: AbortSignal
 ): Promise<NearestLocationResult | null> {
+	const opts: GeolocateNearestOptions =
+		typeof options === 'number'
+			? {
+					latitude: options,
+					longitude: longitudeParam ?? 0,
+					dataUrl: dataUrlParam,
+					maxDistanceKm: maxDistanceKmParam,
+					onProgress: onProgressParam,
+					signal: signalParam
+				}
+			: options;
+
+	const {
+		latitude,
+		longitude,
+		dataUrl = DEFAULT_DATA_URL,
+		maxDistanceKm = DEFAULT_MAX_GEOLOCATE_DISTANCE_KM,
+		onProgress,
+		signal
+	} = opts || {};
+
 	if (signal?.aborted) return null;
 
 	if (!dataUrl || !dataUrl.trim()) {
@@ -72,7 +93,7 @@ export async function geolocateNearest(
 			const countryIdxStr = fields[2];
 			const stateIdxStr = fields[3];
 			const hash = fields[4] || '';
-			if (!hash) continue;
+			if (!name || !hash) continue;
 
 			const country = countryIdxStr !== '' ? dataset.countries[Number(countryIdxStr)] || '' : '';
 			const state = stateIdxStr !== '' ? dataset.states[Number(stateIdxStr)] || '' : '';
@@ -98,6 +119,13 @@ export async function geolocateNearest(
 	}
 
 	const finalResult = nearest && nearest.distanceKm <= maxDistanceKm ? nearest : null;
+	const MAX_CACHE_SIZE = 100;
+	if (geolocateQueryCache.size >= MAX_CACHE_SIZE) {
+		const oldestKey = geolocateQueryCache.keys().next().value;
+		if (oldestKey !== undefined) {
+			geolocateQueryCache.delete(oldestKey);
+		}
+	}
 	geolocateQueryCache.set(geoCacheKey, finalResult);
 	return finalResult;
 }

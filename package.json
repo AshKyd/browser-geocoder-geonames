@@ -12,6 +12,7 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./*.txt": "./dist/*.txt",
     "./*.bin": "./dist/*.bin",
     "./*": {
       "types": "./dist/*.d.ts",
@@ -51,5 +52,5 @@
     "geohash",
     "typeahead"
   ],
-  "license": "MIT"
+  "license": "ISC"
 }

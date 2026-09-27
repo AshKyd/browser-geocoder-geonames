@@ -1,6 +1,6 @@
 {
   "name": "browser-geocoder-geonames",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Offline-first client-side location search and reverse geocoder powered by GeoNames.",
   "type": "module",
   "main": "./dist/index.js",
